@@ -25,7 +25,9 @@ export const signupUser = async (data: any) => {
     { expiresIn: "30d" }
   );
 
-  return { user, token };
+  const { password, ...safeUser } = user;
+
+  return { user: safeUser, token };
 };
 
 export const loginUser = async (data: any) => {
@@ -46,5 +48,7 @@ export const loginUser = async (data: any) => {
     { expiresIn: "30d" }
   );
 
-  return { token, user };
+  const { password, ...safeUser } = user;
+
+  return { token, user: safeUser };
 };

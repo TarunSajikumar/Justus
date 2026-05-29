@@ -1,59 +1,101 @@
 import { Server, Socket } from 'socket.io';
-// import { PrismaClient } from '@prisma/client';
-// const prisma = new PrismaClient();
+import jwt from 'jsonwebtoken';
+import { supabase } from '../config/supabase';
+
+/** Deterministic room ID — always the same for two users regardless of who connects first */
+const roomId = (a: string, b: string) =>
+  [a, b].sort().join('-');
 
 export const setupSockets = (io: Server) => {
   io.on('connection', (socket: Socket) => {
-    const userId = socket.handshake.auth.userId;
-    console.log('A user connected:', userId);
+    // ── Auth ──────────────────────────────────────────────
+    let userId: string | null = null;
+    try {
+      const token = socket.handshake.auth.token as string;
+      if (token) {
+        const decoded: any = jwt.verify(token, process.env.JWT_SECRET as string);
+        userId = decoded.userId;
+      }
+    } catch {
+      console.warn('Socket connected with invalid/missing token');
+    }
 
-    // Mark user as online
+    console.log('Socket connected — userId:', userId ?? '(guest)');
+
     if (userId) {
-      // prisma.user.update({ where: { id: userId }, data: { isOnline: true } });
       socket.broadcast.emit('user_status_change', { userId, status: 'online' });
     }
 
-    socket.on('join_room', (roomId: string) => {
-      socket.join(roomId);
-      console.log(`User joined room: ${roomId}`);
+    // ── Join room ─────────────────────────────────────────
+    // Client sends: { partnerId: string }
+    socket.on('join_room', (partnerId: string) => {
+      if (!userId) return;
+      const room = roomId(userId, partnerId);
+      socket.join(room);
+      console.log(`User ${userId} joined room: ${room}`);
     });
 
-    socket.on('send_message', async (data: { roomId: string, text: string, senderId: string, coupleId: string }) => {
-      const messageData = {
-        id: Date.now().toString(),
-        text: data.text,
-        senderId: data.senderId,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-
-      // Persist to Database
-      try {
-        /*
-        await prisma.message.create({
-          data: {
-            text: data.text,
-            senderId: data.senderId,
-            coupleId: data.coupleId
-          }
-        });
-        */
-      } catch (e) {
-        console.error("Failed to save message", e);
+    // ── Send message ──────────────────────────────────────
+    // Client sends: { receiverId: string, message: string }
+    socket.on('send_message', async (data: { receiverId: string; message: string }) => {
+      if (!userId) {
+        socket.emit('error', { message: 'Not authenticated' });
+        return;
       }
 
-      // Broadcast to everyone in the room
-      io.to(data.roomId).emit('message', messageData);
+      const { receiverId, message } = data;
+
+      if (!receiverId || !message?.trim()) {
+        socket.emit('error', { message: 'receiverId and message are required' });
+        return;
+      }
+
+      // Persist to Supabase
+      const { data: saved, error } = await supabase
+        .from('messages')
+        .insert({
+          sender_id: userId,
+          receiver_id: receiverId,
+          message: message.trim(),
+          read: false,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Failed to save message:', error);
+        socket.emit('error', { message: 'Failed to send message' });
+        return;
+      }
+
+      // Broadcast the real DB row to both users in the room
+      const room = roomId(userId, receiverId);
+      io.to(room).emit('message', {
+        id: saved.id,
+        senderId: saved.sender_id,
+        receiverId: saved.receiver_id,
+        message: saved.message,
+        read: saved.read,
+        createdAt: saved.created_at,
+      });
     });
 
-    socket.on('typing', (data: { roomId: string, userId: string }) => {
-      socket.to(data.roomId).emit('user_typing', { userId: data.userId });
+    // ── Typing indicator ──────────────────────────────────
+    socket.on('typing', (data: { partnerId: string }) => {
+      if (!userId) return;
+      const room = roomId(userId, data.partnerId);
+      socket.to(room).emit('user_typing', { userId });
     });
 
+    // ── Disconnect ────────────────────────────────────────
     socket.on('disconnect', () => {
-      console.log('User disconnected');
+      console.log('Socket disconnected — userId:', userId ?? '(guest)');
       if (userId) {
-        // prisma.user.update({ where: { id: userId }, data: { isOnline: false, lastSeen: new Date() } });
-        socket.broadcast.emit('user_status_change', { userId, status: 'offline', lastSeen: new Date() });
+        socket.broadcast.emit('user_status_change', {
+          userId,
+          status: 'offline',
+          lastSeen: new Date(),
+        });
       }
     });
   });
