@@ -9,6 +9,7 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { COLORS } from '../../theme/colors';
 import { authService } from '../../services/authService';
@@ -19,20 +20,33 @@ export default function SignupScreen({ navigation, route }: any) {
     route.params?.contact || ''
   );
   const [isSending, setIsSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSendOtp = async () => {
     if (!contact.trim()) return;
     setIsSending(true);
+    setError(null);
 
     try {
       await authService.sendOtp(contact.trim());
       setIsSending(false);
       navigation.navigate('OTP', { mode: 'signup', contact: contact.trim() });
-    } catch (err) {
-      console.error('Signup Send OTP error', err);
+    } catch (err: any) {
       setIsSending(false);
-      // fallback
-      navigation.navigate('OTP', { mode: 'signup', contact });
+      const errorMessage = 
+        err?.response?.data?.message || 
+        err?.message || 
+        'Failed to send OTP';
+      
+      console.error('Signup Send OTP error:', errorMessage);
+      setError(errorMessage);
+      
+      // Show error alert
+      Alert.alert(
+        '❌ Error',
+        errorMessage + '\n\nPlease try again in a moment.',
+        [{ text: 'OK', onPress: () => setError(null) }]
+      );
     }
   };
 
@@ -65,7 +79,10 @@ export default function SignupScreen({ navigation, route }: any) {
             placeholder="+91 98765 43210 or you@email.com"
             placeholderTextColor="#555"
             value={contact}
-            onChangeText={setContact}
+            onChangeText={(text) => {
+              setContact(text);
+              setError(null);
+            }}
             style={styles.input}
             keyboardType="email-address"
             autoCapitalize="none"
@@ -74,6 +91,13 @@ export default function SignupScreen({ navigation, route }: any) {
             onSubmitEditing={handleSendOtp}
           />
         </View>
+
+        {/* Error Message */}
+        {error && (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorText}>⚠️ {error}</Text>
+          </View>
+        )}
 
         {/* Send OTP Button */}
         <TouchableOpacity
@@ -175,6 +199,19 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  errorBox: {
+    backgroundColor: 'rgba(220, 38, 38, 0.1)',
+    borderLeftWidth: 4,
+    borderLeftColor: '#dc2626',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  errorText: {
+    color: '#fca5a5',
+    fontSize: 14,
+    fontWeight: '500',
   },
   divider: {
     flexDirection: 'row',

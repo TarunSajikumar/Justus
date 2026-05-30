@@ -17,7 +17,8 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.justus.app"
     },
     "web": {
       "output": "single",
@@ -33,7 +34,15 @@
             "imageWidth": 76
           }
         }
-      ]
-    ]
+      ],
+      "@react-native-community/datetimepicker",
+      "expo-image",
+      "expo-secure-store"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "d71c3084-c32a-4bfc-b404-2b27f5969e1e"
+      }
+    }
   }
 }

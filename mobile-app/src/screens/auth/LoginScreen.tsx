@@ -9,6 +9,7 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { COLORS } from '../../theme/colors';
 import { supabase } from "../../lib/supabase";
@@ -17,6 +18,7 @@ import { authService } from '../../services/authService';
 export default function LoginScreen({ navigation }: any) {
   const [contact, setContact] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const testSupabase = async () => {
     console.log("Testing Supabase connection...");
@@ -32,17 +34,29 @@ export default function LoginScreen({ navigation }: any) {
   const handleSendOtp = async () => {
     if (!contact.trim()) return;
     setIsSending(true);
+    setError(null);
 
     try {
       await authService.sendOtp(contact.trim());
       setIsSending(false);
       // Navigate directly to OTP. The verify-otp endpoint will tell us if user exists.
       navigation.navigate('OTP', { mode: 'login', contact: contact.trim() });
-    } catch (err) {
-      console.error('Send OTP error', err);
+    } catch (err: any) {
       setIsSending(false);
-      // fallback: navigate to OTP anyway
-      navigation.navigate('OTP', { mode: 'login', contact: contact.trim() });
+      const errorMessage = 
+        err?.response?.data?.message || 
+        err?.message || 
+        'Failed to send OTP';
+      
+      console.error('Send OTP error:', errorMessage);
+      setError(errorMessage);
+      
+      // Show error alert
+      Alert.alert(
+        '❌ Error',
+        errorMessage + '\n\nPlease try again in a moment.',
+        [{ text: 'OK', onPress: () => setError(null) }]
+      );
     }
   };
 
@@ -75,7 +89,10 @@ export default function LoginScreen({ navigation }: any) {
             placeholder="+91 98765 43210 or you@email.com"
             placeholderTextColor="#555"
             value={contact}
-            onChangeText={setContact}
+            onChangeText={(text) => {
+              setContact(text);
+              setError(null);
+            }}
             style={styles.input}
             keyboardType="email-address"
             autoCapitalize="none"
@@ -84,6 +101,13 @@ export default function LoginScreen({ navigation }: any) {
             onSubmitEditing={handleSendOtp}
           />
         </View>
+
+        {/* Error Message */}
+        {error && (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorText}>⚠️ {error}</Text>
+          </View>
+        )}
 
         {/* Send OTP Button */}
         <TouchableOpacity
@@ -130,69 +154,23 @@ export default function LoginScreen({ navigation }: any) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    padding: 25,
-    justifyContent: 'center',
-  },
-  header: {
-    marginBottom: 40,
-  },
-  emoji: {
-    fontSize: 44,
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 34,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 10,
-  },
-  subtitle: {
-    color: COLORS.subtext,
-    fontSize: 15,
-    lineHeight: 22,
-  },
-  inputWrapper: {
-    marginBottom: 24,
-  },
-  inputLabel: {
-    color: COLORS.subtext,
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-  },
-  input: {
-    backgroundColor: COLORS.card,
-    borderRadius: 16,
-    paddingHorizontal: 18,
-    paddingVertical: 16,
-    color: '#fff',
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  button: {
-    backgroundColor: COLORS.primary,
-    padding: 18,
-    borderRadius: 18,
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  buttonDisabled: {
-    backgroundColor: '#2a1520',
-  },
   buttonText: {
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  errorBox: {
+    backgroundColor: 'rgba(220, 38, 38, 0.1)',
+    borderLeftWidth: 4,
+    borderLeftColor: '#dc2626',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  errorText: {
+    color: '#fca5a5',
+    fontSize: 14,
+    fontWeight: '500',
   },
   divider: {
     flexDirection: 'row',

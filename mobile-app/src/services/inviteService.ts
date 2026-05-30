@@ -1,6 +1,5 @@
 import { api } from './api';
-import { useAuthStore } from '../store/authStore';
-import { saveAuthData } from '../store/authStore';
+import { authService } from './authService';
 
 export const inviteService = {
   /**
@@ -19,6 +18,8 @@ export const inviteService = {
   joinInvite: async (inviteCode: string) => {
     const response = await api.post('/invite/join', { inviteCode });
     // After joining, it's best to refresh the profile to get all linked data
+    // This updates the Zustand store automatically via authService.me()
+    await authService.me();
     return response.data;
   },
 };

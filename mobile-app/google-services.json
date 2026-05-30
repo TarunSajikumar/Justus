@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "282421947310",
+    "project_id": "justus-1515",
+    "storage_bucket": "justus-1515.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:282421947310:android:a0ced126768bb18f3ab63f",
+        "android_client_info": {
+          "package_name": "com.justus.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBnlfijH9uihWVg1oUmviUzUz8kCHQIJhY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

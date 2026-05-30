@@ -39,6 +39,11 @@ class SocketService {
     this.socket?.disconnect();
   }
 
+  /** Emit user-online event */
+  emitUserOnline(userId: string) {
+    this.socket?.emit('user-online', userId);
+  }
+
   /** Join the shared room with your partner */
   joinRoom(partnerId: string) {
     this.socket?.emit('join_room', partnerId);

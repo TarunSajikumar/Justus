@@ -42,9 +42,19 @@ interface AuthState {
   token: string | null;
   user: any | null;
   partner: any | null;
+  relationshipStartDate: string | null;
+  anniversaryDate: string | null;
+  nextMeetDate: string | null;
+  partnerNickname: string;
+  partnerPingMessage: string;
   setToken: (token: string | null) => void;
   setUser: (user: any | null) => void;
   setPartner: (partner: any | null) => void;
+  setRelationshipStartDate: (date: string | null) => void;
+  setAnniversaryDate: (date: string | null) => void;
+  setNextMeetDate: (date: string | null) => void;
+  setPartnerNickname: (nickname: string) => void;
+  setPartnerPingMessage: (message: string) => void;
   logout: () => void;
 }
 
@@ -52,8 +62,29 @@ export const useAuthStore = create<AuthState>((set) => ({
   token: null,
   user: null,
   partner: null,
+  relationshipStartDate: null,
+  anniversaryDate: null,
+  nextMeetDate: null,
+  partnerNickname: '',
+  partnerPingMessage: 'I miss you, where are you? ❤️',
   setToken: (token) => set({ token }),
   setUser: (user) => set({ user }),
   setPartner: (partner) => set({ partner }),
-  logout: () => set({ token: null, user: null, partner: null }),
+  setRelationshipStartDate: (relationshipStartDate) => set({ relationshipStartDate }),
+  setAnniversaryDate: (anniversaryDate) => set({ anniversaryDate }),
+  setNextMeetDate: (nextMeetDate) => set({ nextMeetDate }),
+  setPartnerNickname: (partnerNickname) => set({ partnerNickname }),
+  setPartnerPingMessage: (partnerPingMessage) => set({ partnerPingMessage }),
+  logout: () => {
+    set({
+      token: null,
+      user: null,
+      partner: null,
+      relationshipStartDate: null,
+      anniversaryDate: null,
+      nextMeetDate: null,
+      partnerNickname: '',
+      partnerPingMessage: 'I miss you, where are you? ❤️'
+    });
+  },
 }));

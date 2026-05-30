@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { COLORS } from '../../theme/colors';
 import { inviteService } from '../../services/inviteService';
+import { useAuthStore } from '../../store/authStore';
 import { FontAwesome } from '@expo/vector-icons';
 
 export default function RelationshipSetupScreen({ navigation }: any) {
@@ -30,9 +31,24 @@ export default function RelationshipSetupScreen({ navigation }: any) {
     setIsJoining(true);
     try {
       await inviteService.joinInvite(inviteCode.trim().toUpperCase());
-      // Store is updated inside joinInvite.
-      // RootNavigator detects relationship_status === 'couple' and switches to CoupleTabs automatically.
-      Alert.alert('Connected! 💑', 'You are now linked with your partner!');
+
+      // Verification log
+      const { user } = useAuthStore.getState();
+      console.log('Successfully joined! Updated user:', user);
+
+      Alert.alert(
+        'Connected! 💑',
+        'You are now linked with your partner!',
+        [
+          {
+            text: 'Continue',
+            onPress: () => {
+              // Navigation will happen automatically because of RootNavigator's reactivity
+              // But we can also force it if the user preferred the Quick Fix
+            },
+          },
+        ]
+      );
     } catch (err: any) {
       console.error('Join error', err);
       Alert.alert('Error', err?.response?.data?.message || 'Failed to join. Please check the code.');

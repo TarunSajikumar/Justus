@@ -18,25 +18,26 @@ import { messageService, ChatMessage } from '../../services/messageService';
 
 export default function ChatScreen() {
   const { user, partner } = useAuthStore();
-  const coupleId = user?.couple_id;
+  const partnerId = partner?.id;
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isPartnerOnline, setIsPartnerOnline] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
   // Load message history from DB on mount
   const loadHistory = useCallback(async () => {
-    if (!coupleId) return;
+    if (!partnerId) return;
     try {
-      const history = await messageService.getHistory(coupleId);
+      const history = await messageService.getHistory(partnerId);
       setMessages(history);
     } catch (err) {
       console.error('Failed to load chat history:', err);
     } finally {
       setIsLoading(false);
     }
-  }, [coupleId]);
+  }, [partnerId]);
 
   useEffect(() => {
     loadHistory();
@@ -44,13 +45,16 @@ export default function ChatScreen() {
 
   // Connect socket for real-time delivery
   useEffect(() => {
-    if (!coupleId || !user?.id) return;
+    if (!partnerId || !user?.id) return;
 
     const setup = async () => {
       const socket = await socketService.connect();
 
-      // Join the couple's dedicated room
-      socket?.emit('join_room', coupleId);
+      // Emit online status immediately after connection
+      socketService.emitUserOnline(user.id);
+
+      // Join the partner's dedicated room
+      socketService.joinRoom(partnerId);
 
       // Receive real-time messages from partner
       socketService.onMessage((incomingMessage: any) => {
@@ -60,11 +64,26 @@ export default function ChatScreen() {
           if (exists) return prev;
           return [...prev, incomingMessage];
         });
+
+        // Auto-scroll to the new message
+        setTimeout(() => {
+          flatListRef.current?.scrollToEnd({ animated: true });
+        }, 100);
       });
 
       socket?.on('user_status_change', (data: { userId: string; status: string }) => {
         if (data.userId === partner?.id) {
           setIsPartnerOnline(data.status === 'online');
+        }
+      });
+
+      // Typing indicator listener
+      socketService.onTyping(({ userId }) => {
+        if (userId === partner?.id) {
+          setIsTyping(true);
+          setTimeout(() => {
+            setIsTyping(false);
+          }, 2000);
         }
       });
     };
@@ -74,26 +93,31 @@ export default function ChatScreen() {
     return () => {
       socketService.disconnect();
     };
-  }, [coupleId, user?.id, partner?.id]);
+  }, [partnerId, user?.id, partner?.id]);
 
   const handleSend = async (text: string) => {
-    if (!coupleId || !text.trim()) return;
+    if (!partnerId || !text.trim()) return;
 
     try {
       // 1. Persist to DB
-      const saved = await messageService.sendMessage(coupleId, text.trim());
+      const saved = await messageService.sendMessage(partnerId, text.trim());
 
       // 2. Add to local state immediately (optimistic)
       setMessages((prev) => [...prev, saved]);
 
       // 3. Emit via socket so partner gets it in real-time
-      socketService.sendMessage({ roomId: coupleId, text: text.trim(), id: saved.id });
+      socketService.sendMessage(partnerId, text.trim());
+
+      // 4. Auto-scroll to the new message
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
     } catch (err) {
       console.error('Failed to send message:', err);
     }
   };
 
-  if (!coupleId) {
+  if (!partnerId) {
     return (
       <View style={[styles.container, styles.centered]}>
         <Text style={styles.emptyText}>Connect with a partner first to start chatting 💌</Text>
@@ -107,6 +131,12 @@ export default function ChatScreen() {
         partnerName={partner?.name || 'My Partner'}
         isOnline={isPartnerOnline}
       />
+
+      {isTyping && (
+        <View style={styles.typingIndicator}>
+          <Text style={styles.typingText}>{partner?.name} is typing...</Text>
+        </View>
+      )}
 
       {isLoading ? (
         <View style={styles.centered}>
@@ -122,6 +152,7 @@ export default function ChatScreen() {
               text={item.message}
               isMe={item.sender_id === user?.id}
               timestamp={item.created_at}
+              seen={item.read}
             />
           )}
           contentContainerStyle={styles.listContent}
@@ -137,7 +168,7 @@ export default function ChatScreen() {
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <ChatInput onSendMessage={handleSend} />
+        <ChatInput onSendMessage={handleSend} partnerId={partnerId} />
       </KeyboardAvoidingView>
     </View>
   );
@@ -163,5 +194,17 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 20,
     flexGrow: 1,
+  },
+  typingIndicator: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderBottomWidth: 1,
+    borderBottomColor: '#222',
+  },
+  typingText: {
+    color: COLORS.subtext,
+    fontSize: 12,
+    fontStyle: 'italic',
   },
 });

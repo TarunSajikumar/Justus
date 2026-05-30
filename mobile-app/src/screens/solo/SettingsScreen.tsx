@@ -42,7 +42,7 @@ export default function SettingsScreen() {
         <Text style={styles.userName}>{user?.name || 'User'}</Text>
         <Text style={styles.userDetail}>{user?.email || user?.phone || ''}</Text>
         <Text style={styles.userDetail}>
-          Relationship Status: {user?.relationshipMode === 'COUPLE' ? 'In a Relationship' : 'Single'}
+          Relationship Status: {user?.relationship_status === 'couple' ? 'In a Relationship ❤️' : 'Single'}
         </Text>
       </View>
 

@@ -6,9 +6,16 @@ interface MessageBubbleProps {
   text: string;
   isMe: boolean;
   timestamp: string;
+  seen?: boolean;
 }
 
-export const MessageBubble = ({ text, isMe, timestamp }: MessageBubbleProps) => {
+export const MessageBubble = ({ text, isMe, timestamp, seen }: MessageBubbleProps) => {
+  const formattedTime = new Date(timestamp).toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  });
+
   return (
     <View style={[styles.container, isMe ? styles.myContainer : styles.partnerContainer]}>
       <View style={[styles.bubble, isMe ? styles.myBubble : styles.partnerBubble]}>
@@ -16,7 +23,14 @@ export const MessageBubble = ({ text, isMe, timestamp }: MessageBubbleProps) => 
           {text}
         </Text>
       </View>
-      <Text style={styles.timestamp}>{timestamp}</Text>
+      <View style={styles.statusContainer}>
+        {isMe && (
+          <Text style={styles.statusText}>
+            {seen ? '✓✓ Seen' : '✓ Sent'}
+          </Text>
+        )}
+        <Text style={styles.timestamp}>{formattedTime}</Text>
+      </View>
     </View>
   );
 };
@@ -57,9 +71,18 @@ const styles = StyleSheet.create({
   partnerText: {
     color: '#eee',
   },
+  statusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    gap: 8,
+  },
+  statusText: {
+    color: COLORS.subtext,
+    fontSize: 10,
+  },
   timestamp: {
     color: COLORS.subtext,
     fontSize: 10,
-    marginTop: 4,
   },
 });

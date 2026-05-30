@@ -11,13 +11,13 @@ export interface ChatMessage {
 
 export const messageService = {
   /**
-   * GET /api/messages/:coupleId
-   * Returns chat history for the couple (oldest first).
+   * GET /api/messages/:partnerId
+   * Returns chat history with the partner (oldest first).
    */
-  getHistory: async (coupleId: string, before?: string): Promise<ChatMessage[]> => {
+  getHistory: async (partnerId: string, before?: string): Promise<ChatMessage[]> => {
     const params: any = { limit: 50 };
     if (before) params.before = before;
-    const response = await api.get(`/messages/${coupleId}`, { params });
+    const response = await api.get(`/messages/${partnerId}`, { params });
     return response.data.messages ?? [];
   },
 
@@ -25,8 +25,16 @@ export const messageService = {
    * POST /api/messages
    * Persists a new message to the database.
    */
-  sendMessage: async (coupleId: string, message: string): Promise<ChatMessage> => {
-    const response = await api.post('/messages', { coupleId, message });
+  sendMessage: async (partnerId: string, message: string): Promise<ChatMessage> => {
+    const response = await api.post('/messages', { partnerId, message });
     return response.data.message;
+  },
+
+  /**
+   * PATCH /api/messages/:partnerId/read
+   * Marks all messages from partner as read.
+   */
+  markRead: async (partnerId: string): Promise<void> => {
+    await api.patch(`/messages/${partnerId}/read`);
   },
 };

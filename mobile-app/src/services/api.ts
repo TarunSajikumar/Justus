@@ -1,5 +1,6 @@
 import axios from "axios";
 import * as SecureStore from 'expo-secure-store';
+import { useAuthStore } from '../store/authStore';
 
 export const BASE_URL =
   process.env.EXPO_PUBLIC_API_URL!;
@@ -26,16 +27,17 @@ api.interceptors.request.use(
   }
 );
 
-// Interceptor for handling errors (like 401 Unauthorized)
+// Interceptor for handling errors (like 401 Unauthorized or 404 Not Found for profile)
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    if (error.response && error.response.status === 401) {
-      // Token expired or invalid
+    const status = error.response ? error.response.status : null;
+    const url = error.config ? error.config.url : '';
+
+    if (status === 401 || (status === 404 && url?.includes('/auth/me'))) {
+      // Token expired, invalid, or user record deleted from database
       await SecureStore.deleteItemAsync('userToken');
-      // You might want to trigger a logout in your store here
-      // But since we don't have direct access to the store here easily without circular dependencies
-      // we can at least clear the token.
+      useAuthStore.getState().logout();
     }
     return Promise.reject(error);
   }

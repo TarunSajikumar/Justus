@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   TextInput,
@@ -6,14 +6,31 @@ import {
   StyleSheet
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
+import { socketService } from '../../services/socket';
 import { COLORS } from '../../theme/colors';
 
 interface ChatInputProps {
   onSendMessage: (text: string) => void;
+  partnerId?: string;
 }
 
-export const ChatInput = ({ onSendMessage }: ChatInputProps) => {
+export const ChatInput = ({ onSendMessage, partnerId }: ChatInputProps) => {
   const [text, setText] = useState('');
+  const typingTimeoutRef = useRef<NodeJS.Timeout>();
+
+  const handleTextChange = (newText: string) => {
+    setText(newText);
+
+    // Emit typing indicator
+    if (partnerId && newText.trim()) {
+      socketService.sendTyping(partnerId);
+    }
+
+    // Reset typing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+  };
 
   const handleSend = () => {
     if (text.trim()) {
@@ -33,7 +50,7 @@ export const ChatInput = ({ onSendMessage }: ChatInputProps) => {
         placeholder="Write a love note..."
         placeholderTextColor="#777"
         value={text}
-        onChangeText={setText}
+        onChangeText={handleTextChange}
         multiline
       />
 
