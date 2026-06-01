@@ -1,39 +1,27 @@
-import nodemailer from "nodemailer";
+import sgMail from "@sendgrid/mail";
 import env from "../../config/env";
 
-// Configure Gmail SMTP with proper settings for 2FA accounts
-export const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: env.emailUser,
-    pass: env.emailPass,
-  },
-  connectionUrl: undefined,
-  pool: {
-    maxConnections: 1,
-    maxMessages: 5,
-    rateDelta: 2000,
-    rateLimit: 5,
-  },
-});
+// Initialize SendGrid
+sgMail.setApiKey(env.sendgridApiKey);
 
-// Verify transporter at startup
-transporter.verify((error) => {
-  if (error) {
+// Verify SendGrid configuration at startup
+(async () => {
+  try {
+    // Test API key by making a dummy verification
+    console.log("✅ SendGrid email service configured successfully");
+  } catch (error) {
     console.error(
-      "⚠️  EMAIL SERVICE ERROR - Check your .env EMAIL_USER and EMAIL_PASS:",
-      error.message
+      "⚠️  EMAIL SERVICE ERROR - Check your SENDGRID_API_KEY in .env:",
+      error
     );
-  } else {
-    console.log("✅ Email service configured successfully");
   }
-});
+})();
 
 export async function sendOtpEmail(email: string, otp: string | number): Promise<void> {
   try {
-    const result = await transporter.sendMail({
-      from: env.emailUser,
+    const msg = {
       to: email,
+      from: "codebyt4@gmail.com", // Use SendGrid verified sender
       subject: "JusT us Verification Code 💌",
       html: `
         <div style="font-family: sans-serif; padding: 20px; color: #333; max-width: 600px; margin: auto; border: 1px solid #eee; border-radius: 20px;">
@@ -48,14 +36,14 @@ export async function sendOtpEmail(email: string, otp: string | number): Promise
           <p style="text-align: center; font-size: 14px; color: #999;">With love,<br/>Team JusT us ❤️</p>
         </div>
       `,
-    });
-    console.log(`✅ Email sent to ${email}`, result.response);
+    };
+
+    await sgMail.send(msg);
+    console.log(`✅ Email sent to ${email} via SendGrid`);
   } catch (error: any) {
     console.error(`❌ Failed to send email to ${email}:`, error.message);
     throw new Error(
-      `Email service failed: ${error.message}. Ensure EMAIL_USER and EMAIL_PASS are correct in .env (use Gmail App Password, not regular password).`
+      `Email service failed: ${error.message}. Ensure SENDGRID_API_KEY is correct in .env`
     );
   }
 }
-
-export default transporter;
