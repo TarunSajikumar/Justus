@@ -12,13 +12,21 @@ export const inviteService = {
   },
 
   /**
+   * GET /api/invite/my-invites
+   * Returns a list of invites created by the current user.
+   */
+  getMyInvites: async () => {
+    const response = await api.get('/invite/my-invites');
+    return response.data;
+  },
+
+  /**
    * POST /api/invite/join
    * Validates invite code, creates couple, links both users.
    */
   joinInvite: async (inviteCode: string) => {
     const response = await api.post('/invite/join', { inviteCode });
-    // After joining, it's best to refresh the profile to get all linked data
-    // This updates the Zustand store automatically via authService.me()
+    // After joining, refresh the profile to get all linked data
     await authService.me();
     return response.data;
   },

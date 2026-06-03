@@ -5,6 +5,10 @@ import {
   updateFcmToken,
   updateNotificationSettings,
   getPartnerStatus,
+  getPreferences,
+  updatePreferences,
+  exportUserData,
+  resetRelationshipStatus,
 } from "../controllers/user.controller";
 import { authMiddleware } from "../middleware/auth.middleware";
 
@@ -15,5 +19,9 @@ router.put("/partner-nickname", authMiddleware, updatePartnerNickname);
 router.put("/ping-message", authMiddleware, updatePingMessage);
 router.put("/fcm-token", authMiddleware, updateFcmToken);
 router.put("/notifications", authMiddleware, updateNotificationSettings);
+router.get("/preferences", authMiddleware, getPreferences);
+router.put("/preferences", authMiddleware, updatePreferences);
+router.get("/export", authMiddleware, exportUserData);
+router.post("/reset-status", authMiddleware, resetRelationshipStatus);
 
 export default router;

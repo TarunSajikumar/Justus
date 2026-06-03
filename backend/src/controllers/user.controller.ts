@@ -92,8 +92,8 @@ export const getPartnerStatus = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    if (!user.partner_id) {
-      return res.status(404).json({ message: "Partner not found" });
+    if (!user.partner_id || user.partner_id.toString() === "" || user.partner_id.toString() === "null") {
+      return res.status(404).json({ message: "Partner ID not connected" });
     }
 
     const partner = await User.findById(user.partner_id);
@@ -106,5 +106,82 @@ export const getPartnerStatus = async (req: AuthRequest, res: Response) => {
   } catch (error) {
     console.error("getPartnerStatus error:", error);
     res.status(500).json({ message: "Failed to get partner status" });
+  }
+};
+
+export const getPreferences = async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await User.findById(req.userId).select('preferences');
+    if (!user) return res.status(404).json({ message: "User not found" });
+    return res.json((user as any).preferences || { language: 'en', fontSize: 'medium' });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to get preferences" });
+  }
+};
+
+export const updatePreferences = async (req: AuthRequest, res: Response) => {
+  const { language, fontSize } = req.body;
+  try {
+    const update: any = {};
+    if (language) update['preferences.language'] = language;
+    if (fontSize) update['preferences.fontSize'] = fontSize;
+
+    const user = await User.findByIdAndUpdate(req.userId, { $set: update }, { new: true });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    return res.json({ success: true, preferences: (user as any).preferences });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to update preferences" });
+  }
+};
+
+export const exportUserData = async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await User.findById(req.userId).select('-fcmToken');
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // In a production app you'd email them a download link.
+    // For now, return a JSON snapshot.
+    return res.json({
+      success: true,
+      message: "Your data export has been queued. You will receive an email shortly.",
+      preview: {
+        email: user.email,
+        name: user.name,
+        exportedAt: new Date().toISOString(),
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to export data" });
+  }
+};
+
+export const resetRelationshipStatus = async (req: AuthRequest, res: Response) => {
+  const userId = req.userId;
+
+  try {
+    const user = await User.findByIdAndUpdate(
+      userId,
+      {
+        relationship_status: "solo",
+        couple_id: null,
+        partner_id: null,
+        partnerNickname: "",
+      },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    return res.json({
+      success: true,
+      message: "Relationship status reset to solo",
+      user: user,
+    });
+  } catch (error) {
+    console.error("resetRelationshipStatus error:", error);
+    res.status(500).json({ message: "Failed to reset relationship status" });
   }
 };

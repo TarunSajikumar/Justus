@@ -3,6 +3,35 @@ import { clearAuthData, saveAuthData } from '../store/authStore';
 import { useAuthStore } from '../store/authStore';
 
 export const authService = {
+  /** Helper to update Zustand store with user profile data */
+  updateStoreWithProfile: async (profile: any) => {
+    const {
+      setUser,
+      setPartner,
+      setRelationshipStartDate,
+      setAnniversaryDate,
+      setNextMeetDate,
+      setPartnerNickname,
+      setPartnerPingMessage,
+      setNotificationsEnabled,
+      token,
+    } = useAuthStore.getState();
+
+    setUser(profile);
+    setPartner(profile.partner ?? null);
+    setRelationshipStartDate(profile.relationshipStartDate ?? null);
+    setAnniversaryDate(profile.anniversaryDate ?? null);
+    setNextMeetDate(profile.nextMeetDate ?? null);
+    setPartnerNickname(profile.partnerNickname ?? '');
+    setPartnerPingMessage(profile.partnerPingMessage ?? 'I miss you, where are you? ❤️');
+    setNotificationsEnabled(profile.notificationsEnabled ?? false);
+
+    // Persist to local storage
+    if (token) {
+      await saveAuthData(token, profile);
+    }
+  },
+
   /** POST /api/auth/send-otp */
   sendOtp: async (contact: string) => {
     const response = await api.post('/auth/send-otp', { email: contact });
@@ -45,30 +74,15 @@ export const authService = {
   me: async () => {
     const response = await api.get('/auth/me');
     const profile = response.data;
-    const {
-      setUser,
-      setPartner,
-      setRelationshipStartDate,
-      setAnniversaryDate,
-      setNextMeetDate,
-      setPartnerNickname,
-      setPartnerPingMessage,
-      setNotificationsEnabled,
-    } = useAuthStore.getState();
-    setUser(profile);
-    setPartner(profile.partner ?? null);
-    setRelationshipStartDate(profile.relationshipStartDate ?? null);
-    setAnniversaryDate(profile.anniversaryDate ?? null);
-    setNextMeetDate(profile.nextMeetDate ?? null);
-    setPartnerNickname(profile.partnerNickname ?? '');
-    setPartnerPingMessage(profile.partnerPingMessage ?? 'I miss you, where are you? ❤️');
-    setNotificationsEnabled(profile.notificationsEnabled ?? false);
-    // Persist updated user to local storage
-    const token = useAuthStore.getState().token;
-    if (token) {
-      await saveAuthData(token, profile);
-    }
+    await authService.updateStoreWithProfile(profile);
     return profile;
+  },
+
+  resetStatus: async () => {
+    const response = await api.post('/users/reset-status');
+    const { user } = response.data;
+    await authService.updateStoreWithProfile(user);
+    return user;
   },
 
   /** GET /api/dashboard */

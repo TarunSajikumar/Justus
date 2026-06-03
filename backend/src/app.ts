@@ -13,6 +13,7 @@ import notificationRoutes from "./routes/notification.routes";
 import moodRoutes from "./routes/mood.routes";
 import achievementRoutes from "./routes/achievement.routes";
 import noteRoutes from "./routes/note.routes";
+import timelineRoutes from "./routes/timeline.routes";
 import { authMiddleware } from "./middleware/auth.middleware";
 
 const app = express();
@@ -37,6 +38,7 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/moods", moodRoutes);
 app.use("/api/achievements", achievementRoutes);
 app.use("/api/notes", noteRoutes);
+app.use("/api/timeline", timelineRoutes);
 
 app.get("/api/me", authMiddleware, (req: any, res) => {
   res.json({ userId: req.userId });

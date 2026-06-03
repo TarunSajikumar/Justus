@@ -14,6 +14,7 @@ import { COLORS } from '../../theme/colors';
 import { api } from '../../services/api';
 import { saveAuthData } from '../../store/authStore';
 import { useAuthStore } from '../../store/authStore';
+import { authService } from '../../services/authService';
 
 const OTP_LENGTH = 6;
 
@@ -106,9 +107,11 @@ export default function OtpVerificationScreen({ navigation, route }: any) {
       }
 
       if (verified && token && user) {
-        await saveAuthData(token, user);
         setToken(token);
-        setUser(user);
+        await saveAuthData(token, user);
+
+        // Populate all store fields from the resolved user profile
+        await authService.updateStoreWithProfile(user);
 
         // If new user, show signup details form
         // If existing user, they will be auto-logged in to home screen

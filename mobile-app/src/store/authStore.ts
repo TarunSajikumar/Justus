@@ -1,4 +1,5 @@
 import { storageService } from '../services/storageService';
+import { authService } from '../services/authService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 
@@ -57,6 +58,7 @@ interface AuthState {
   setPartnerNickname: (nickname: string) => void;
   setPartnerPingMessage: (message: string) => void;
   setNotificationsEnabled: (enabled: boolean) => void;
+  refreshUser: () => Promise<void>;
   logout: () => void;
 }
 
@@ -79,6 +81,9 @@ export const useAuthStore = create<AuthState>((set) => ({
   setPartnerNickname: (partnerNickname) => set({ partnerNickname }),
   setPartnerPingMessage: (partnerPingMessage) => set({ partnerPingMessage }),
   setNotificationsEnabled: (notificationsEnabled) => set({ notificationsEnabled }),
+  refreshUser: async () => {
+    await authService.me();
+  },
   logout: () => {
     set({
       token: null,

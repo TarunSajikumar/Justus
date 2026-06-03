@@ -33,15 +33,10 @@ export default function LoginSignupScreen({ navigation }: any) {
 
         // Update the store and local storage
         setToken(token);
-        setUser(user);
         await saveAuthData(token, user);
 
-        // Manually trigger a fresh profile sync to ensure partner/couple data is loaded
-        try {
-          await authService.me();
-        } catch (meError) {
-          console.error("Post-login profile sync failed", meError);
-        }
+        // Populate all store fields from the resolved user profile
+        await authService.updateStoreWithProfile(user);
 
         setIsSending(false);
         return;

@@ -153,16 +153,78 @@ export default function LoginScreen({ navigation }: any) {
     </KeyboardAvoidingView>
   );
 }
-
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 20,
+    paddingTop: 60,
+    paddingBottom: 40,
+    justifyContent: 'center',
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  emoji: {
+    fontSize: 48,
+    marginBottom: 16,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: COLORS.subtext,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  inputWrapper: {
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: COLORS.subtext,
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  input: {
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: 16,
+    color: '#fff',
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  button: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  buttonDisabled: {
+    opacity: 0.5,
+  },
   buttonText: {
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 16,
   },
   errorBox: {
-    backgroundColor: 'rgba(220, 38, 38, 0.1)',
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
     borderLeftWidth: 4,
-    borderLeftColor: '#dc2626',
+    borderLeftColor: COLORS.danger,
     padding: 12,
     borderRadius: 8,
     marginBottom: 16,
@@ -175,7 +237,7 @@ export default function LoginScreen({ navigation }: any) {
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
+    marginVertical: 20,
   },
   dividerLine: {
     flex: 1,
@@ -200,3 +262,4 @@ export default function LoginScreen({ navigation }: any) {
     fontWeight: '700',
   },
 });
+

@@ -23,10 +23,35 @@ const messageSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    status: {
+      type: String,
+      enum: ['sent', 'delivered', 'read'],
+      default: 'sent',
+    },
+    media_url: {
+      type: String,
+      default: null,
+    },
+    media_type: {
+      type: String,
+      enum: ['photo', 'video', null],
+      default: null,
+    },
+    reaction: {
+      type: String,
+      default: null,
+    },
+    reply_to: {
+      type: String,
+      default: null,
+    },
   },
   {
     timestamps: true,
   }
 );
+
+// Index for fast partner-based chat history queries
+messageSchema.index({ sender_id: 1, receiver_id: 1, createdAt: -1 });
 
 export default mongoose.model("Message", messageSchema);

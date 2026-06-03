@@ -76,6 +76,11 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
+    preferences: {
+      language: { type: String, default: 'en' },
+      fontSize: { type: String, enum: ['small', 'medium', 'large'], default: 'medium' },
+    },
   },
   {
     timestamps: true,

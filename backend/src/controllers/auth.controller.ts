@@ -8,6 +8,38 @@ import Otp from "../models/Otp";
 import User from "../models/User";
 import Couple from "../models/Couple";
 
+const resolveFullProfile = async (user: any) => {
+  let partner = null;
+  let relationshipStartDate = null;
+  let anniversaryDate = null;
+  let nextMeetDate = null;
+
+  try {
+    if (user.couple_id && user.couple_id !== "" && user.couple_id !== "null") {
+      const [partnerData, coupleData] = await Promise.all([
+        user.partner_id ? User.findById(user.partner_id) : Promise.resolve(null),
+        Couple.findById(user.couple_id)
+      ]);
+      partner = partnerData;
+      relationshipStartDate = coupleData?.relationshipStartDate || coupleData?.createdAt;
+      anniversaryDate = coupleData?.anniversaryDate || null;
+      nextMeetDate = coupleData?.nextMeetDate || null;
+    }
+  } catch (error) {
+    console.error("resolveFullProfile error:", error);
+    // Continue with partial profile rather than crashing
+  }
+
+  return {
+    ...user.toObject(),
+    partner,
+    relationshipStartDate,
+    anniversaryDate,
+    nextMeetDate,
+    partnerPingMessage: user.partnerPingMessage
+  };
+};
+
 export const sendOtp = async (req: Request, res: Response) => {
   let contact = (req.body.email || req.body.phone || "").trim();
   
@@ -169,12 +201,14 @@ export const verifyOtp = async (req: Request, res: Response) => {
     // 4. Token
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET as string, { expiresIn: "30d" });
 
+    const fullProfile = await resolveFullProfile(user);
+
     res.status(200).json({
       success: true,
       verified: true,
       isNewUser,
       token,
-      user,
+      user: fullProfile,
     });
   } catch (error: any) {
     console.error("Verify OTP Error:", error);
@@ -225,33 +259,12 @@ export const login = async (req: Request, res: Response) => {
       { expiresIn: "30d" }
     );
 
-    // Resolve additional data for syncing
-    let partner = null;
-    let relationshipStartDate = null;
-    let anniversaryDate = null;
-    let nextMeetDate = null;
-
-    if (user.partner_id) {
-      partner = await User.findById(user.partner_id);
-    }
-
-    if (user.couple_id) {
-      const couple = await Couple.findById(user.couple_id);
-      relationshipStartDate = couple?.relationshipStartDate || couple?.createdAt;
-      anniversaryDate = couple?.anniversaryDate;
-      nextMeetDate = couple?.nextMeetDate;
-    }
+    const fullProfile = await resolveFullProfile(user);
 
     res.status(200).json({
       message: "Login success",
       token,
-      user: {
-        ...user.toObject(),
-        partner,
-        relationshipStartDate,
-        anniversaryDate,
-        nextMeetDate
-      }
+      user: fullProfile
     });
   } catch (error: any) {
     console.error("Login Error:", error);
@@ -272,31 +285,8 @@ export const getProfile = async (req: any, res: Response) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Resolve partner and couple if couple exists
-    let partner = null;
-    let relationshipStartDate = null;
-    let anniversaryDate = null;
-    let nextMeetDate = null;
-
-    if (user.couple_id) {
-      const [partnerData, coupleData] = await Promise.all([
-        User.findById(user.partner_id),
-        Couple.findById(user.couple_id)
-      ]);
-      partner = partnerData;
-      relationshipStartDate = coupleData?.relationshipStartDate || coupleData?.createdAt;
-      anniversaryDate = coupleData?.anniversaryDate || null;
-      nextMeetDate = coupleData?.nextMeetDate || null;
-    }
-
-    res.json({
-      ...user.toObject(),
-      partner,
-      relationshipStartDate,
-      anniversaryDate,
-      nextMeetDate,
-      partnerPingMessage: user.partnerPingMessage
-    });
+    const fullProfile = await resolveFullProfile(user);
+    res.json(fullProfile);
   } catch (error) {
     res.status(500).json({ message: "Failed to fetch profile" });
   }
@@ -311,13 +301,22 @@ export const updateProfile = async (req: any, res: Response) => {
   }
 
   try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Only set to 'solo' if they are currently 'none' (initial setup)
+    // Don't overwrite if they are already in a couple or have a partner
+    const newStatus = user.relationship_status === "none" ? "solo" : user.relationship_status;
+
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       {
         name,
         birthday,
         gender,
-        relationship_status: "solo",
+        relationship_status: newStatus,
       },
       { new: true }
     );
@@ -326,11 +325,14 @@ export const updateProfile = async (req: any, res: Response) => {
       return res.status(500).json({ message: "Failed to update profile" });
     }
 
+    const fullProfile = await resolveFullProfile(updatedUser);
+
     res.status(200).json({
       success: true,
-      user: updatedUser,
+      user: fullProfile,
     });
   } catch (error) {
+    console.error("updateProfile error:", error);
     res.status(500).json({ message: "Failed to update profile" });
   }
 };

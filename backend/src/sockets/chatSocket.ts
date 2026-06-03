@@ -26,21 +26,20 @@ export const setupSockets = (io: Server) => {
       User.findByIdAndUpdate(userId, { isOnline: true }).catch((err) =>
         console.error("Error setting isOnline on connect:", err)
       );
-      socket.broadcast.emit("user_status_change", { userId, status: "online" });
+      // Wait a tiny bit to ensure the connection is stable
+      setTimeout(() => {
+        socket.broadcast.emit("user_status_change", { userId, status: "online" });
+      }, 500);
     }
 
     socket.on("user-online", async (id: string) => {
       userId = id;
-      await User.findByIdAndUpdate(id, {
-        isOnline: true,
-      }).catch((err) => console.error("Error setting isOnline on user-online:", err));
-
+      await User.findByIdAndUpdate(id, { isOnline: true }).catch(console.error);
       socket.join(id);
       socket.broadcast.emit("user_status_change", { userId: id, status: "online" });
     });
 
     // ── Join room ─────────────────────────────────────────
-    // Client sends: { partnerId: string }
     socket.on("join_room", (partnerId: string) => {
       if (!userId) return;
       const room = roomId(userId, partnerId);
@@ -48,15 +47,14 @@ export const setupSockets = (io: Server) => {
       console.log(`User ${userId} joined room: ${room}`);
     });
 
-    // ── Send message ──────────────────────────────────────
-    // Client sends: { receiverId: string, message: string }
-    socket.on("send_message", async (data: { receiverId: string; message: string }) => {
+    // ── Send text message ─────────────────────────────────
+    socket.on("send_message", async (data: { receiverId: string; message: string; reply_to?: string | null }) => {
       if (!userId) {
         socket.emit("error", { message: "Not authenticated" });
         return;
       }
 
-      const { receiverId, message } = data;
+      const { receiverId, message, reply_to } = data;
 
       if (!receiverId || !message?.trim()) {
         socket.emit("error", { message: "receiverId and message are required" });
@@ -64,35 +62,102 @@ export const setupSockets = (io: Server) => {
       }
 
       try {
-        // Persist to MongoDB
         const saved = await Message.create({
           sender_id: userId,
           receiver_id: receiverId,
           message: message.trim(),
+          reply_to: reply_to || null,
           read: false,
+          status: "sent",
         });
 
-        // Broadcast the real DB row to both users in the room
         const room = roomId(userId, receiverId);
         io.to(room).emit("message", {
           id: saved._id,
-          senderId: saved.sender_id,
-          receiverId: saved.receiver_id,
+          sender_id: saved.sender_id,
+          receiver_id: saved.receiver_id,
           message: saved.message,
           read: saved.read,
-          createdAt: saved.createdAt,
+          status: "sent",
+          reply_to: saved.reply_to || null,
+          created_at: saved.createdAt,
         });
+
+        // Notify sender: message delivered when partner receives it
+        socket.emit("message_status", { messageId: saved._id, status: "delivered" });
       } catch (error) {
         console.error("Failed to save message:", error);
         socket.emit("error", { message: "Failed to send message" });
       }
     });
 
+    // ── Send media (already persisted by REST) ────────────
+    socket.on("send_media", (data: { receiverId: string; mediaMessage: any }) => {
+      if (!userId) return;
+      const { receiverId, mediaMessage } = data;
+      const room = roomId(userId, receiverId);
+      socket.to(room).emit("message", mediaMessage);
+    });
+
+    // ── Delete message ────────────────────────────────────
+    socket.on("delete_message", async (data: { messageId: string }) => {
+      if (!userId) return;
+      const { messageId } = data;
+
+      try {
+        const message = await Message.findOneAndDelete({
+          _id: messageId,
+          sender_id: userId,
+        });
+
+        if (message) {
+          // Notify partner
+          const receiverId = message.receiver_id?.toString();
+          if (receiverId) {
+            const room = roomId(userId, receiverId);
+            io.to(room).emit("message_deleted", { messageId });
+          }
+        }
+      } catch (error) {
+        console.error("Failed to delete message via socket:", error);
+      }
+    });
+
+    // ── Message reaction ──────────────────────────────────
+    socket.on("message_reaction", async (data: { messageId: string; reaction: string }) => {
+      if (!userId) return;
+      const { messageId, reaction } = data;
+
+      try {
+        const message = await Message.findById(messageId);
+        if (!message) return;
+
+        const newReaction = (message as any).reaction === reaction ? null : reaction;
+        (message as any).reaction = newReaction;
+        await message.save();
+
+        const receiverId = message.sender_id.toString() === userId
+          ? message.receiver_id?.toString()
+          : message.sender_id.toString();
+
+        if (receiverId) {
+          const room = roomId(userId, receiverId);
+          io.to(room).emit("message_reaction", { messageId, reaction: newReaction });
+        }
+      } catch (error) {
+        console.error("Failed to process reaction:", error);
+      }
+    });
+
     // ── Typing indicator ──────────────────────────────────
-    socket.on("typing", (data: { partnerId: string }) => {
+    // Supports both old format { partnerId } and new { partnerId, isTyping }
+    socket.on("typing", (data: { partnerId: string; isTyping?: boolean }) => {
       if (!userId) return;
       const room = roomId(userId, data.partnerId);
-      socket.to(room).emit("user_typing", { userId });
+      socket.to(room).emit("user_typing", {
+        userId,
+        isTyping: data.isTyping !== false, // default true for backward compat
+      });
     });
 
     // ── Disconnect ────────────────────────────────────────
