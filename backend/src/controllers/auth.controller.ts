@@ -139,7 +139,7 @@ export const verifyEmailOtp = async (req: Request, res: Response) => {
     await PendingUser.findByIdAndUpdate(
       pendingUser._id,
       { email_verified: true },
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     res.status(200).json({
@@ -306,7 +306,7 @@ export const resetPassword = async (req: Request, res: Response) => {
     await User.findOneAndUpdate(
       { email: normalizedEmail },
       { password: hashedPassword },
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     // Clean up OTP record
@@ -339,7 +339,7 @@ export const updateProfile = async (req: any, res: Response) => {
     const updatedUser = await User.findByIdAndUpdate(
       req.userId,
       { name, birthday, gender, relationship_status: user.relationship_status === "none" ? "solo" : user.relationship_status },
-      { new: true }
+      { returnDocument: 'after' }
     );
     const fullProfile = await resolveFullProfile(updatedUser);
     res.status(200).json({ success: true, user: fullProfile });

@@ -13,7 +13,7 @@ export const updatePartnerNickname = async (req: AuthRequest, res: Response) => 
         partnerNickname: nickname?.trim() || "",
       },
       {
-        new: true,
+        returnDocument: 'after',
       }
     );
 
@@ -41,7 +41,7 @@ export const updatePingMessage = async (req: AuthRequest, res: Response) => {
       {
         partnerPingMessage: message?.trim() || "I miss you, where are you? ❤️",
       },
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     return res.json({
@@ -73,7 +73,7 @@ export const updateNotificationSettings = async (req: AuthRequest, res: Response
     const user = await User.findByIdAndUpdate(
       userId,
       { notificationsEnabled: enabled },
-      { new: true }
+      { returnDocument: 'after' }
     );
     return res.json({
       success: true,
@@ -126,7 +126,7 @@ export const updatePreferences = async (req: AuthRequest, res: Response) => {
     if (language) update['preferences.language'] = language;
     if (fontSize) update['preferences.fontSize'] = fontSize;
 
-    const user = await User.findByIdAndUpdate(req.userId, { $set: update }, { new: true });
+    const user = await User.findByIdAndUpdate(req.userId, { $set: update }, { returnDocument: 'after' });
     if (!user) return res.status(404).json({ message: "User not found" });
 
     return res.json({ success: true, preferences: (user as any).preferences });
@@ -168,7 +168,7 @@ export const resetRelationshipStatus = async (req: AuthRequest, res: Response) =
         partner_id: null,
         partnerNickname: "",
       },
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     if (!user) {
