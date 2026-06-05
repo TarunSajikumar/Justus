@@ -5,8 +5,10 @@ dotenv.config();
 const requiredEnv = [
   "MONGODB_URI",
   "JWT_SECRET",
-  "EMAIL_USER",
-  "EMAIL_PASS",
+  "BREVO_SMTP_HOST",
+  "BREVO_SMTP_PORT",
+  "BREVO_SMTP_USER",
+  "BREVO_SMTP_PASS",
 ];
 
 requiredEnv.forEach((key) => {
@@ -18,8 +20,12 @@ requiredEnv.forEach((key) => {
 export default {
   mongodbUri: process.env.MONGODB_URI!,
   jwtSecret: process.env.JWT_SECRET!,
-  emailUser: process.env.EMAIL_USER!,
-  emailPass: process.env.EMAIL_PASS!,
+  brevoSmtpHost: process.env.BREVO_SMTP_HOST!,
+  brevoSmtpPort: Number(process.env.BREVO_SMTP_PORT!),
+  brevoSmtpUser: process.env.BREVO_SMTP_USER!,
+  brevoSmtpPass: process.env.BREVO_SMTP_PASS!,
+  emailUser: process.env.EMAIL_USER,
+  emailPass: process.env.EMAIL_PASS,
   port: process.env.PORT || 5000,
 
   // Optional Twilio Config
