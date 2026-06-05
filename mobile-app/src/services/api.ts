@@ -30,19 +30,24 @@ api.interceptors.request.use((config) => {
 
 api.interceptors.response.use(
   (response) => {
-    console.log(`✅ RESPONSE: ${response.status} ${response.statusText}`);
+    console.log('RESPONSE:', response.status, response.data);
     return response;
   },
   (error) => {
+    console.log('FULL AXIOS ERROR');
+    console.log(JSON.stringify(error.toJSON?.(), null, 2));
+
     if (error.response) {
-      console.log(`❌ ERROR: ${error.response.status} - ${error.response.statusText}`);
-      console.log(`📝 ERROR DATA:`, error.response.data);
+      console.log('STATUS:', error.response.status);
+      console.log('DATA:', error.response.data);
     } else if (error.request) {
-      console.log(`❌ NO RESPONSE: Request made but no response received`);
-      console.log(`📡 Possible causes: Network error, timeout, or server unreachable`);
+      console.log('NO RESPONSE: Request made but no response received');
+      console.log('Status null');
+      console.log('URL:', error.config?.url);
     } else {
-      console.log(`❌ ERROR:`, error.message);
+      console.log('ERROR:', error.message);
     }
+
     return Promise.reject(error);
   }
 );
