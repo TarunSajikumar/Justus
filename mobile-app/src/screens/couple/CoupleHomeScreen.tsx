@@ -400,9 +400,6 @@ export default function CoupleHomeScreen({ navigation }: any) {
   const [customMessageInput, setCustomMessageInput] = useState('');
   const [customMessageEmoji, setCustomMessageEmoji] = useState('❤️');
 
-  // Focus States
-  const [activeInput, setActiveInput] = useState<string | null>(null);
-
   // Loading States
   const [isSavingNote, setIsSavingNote] = useState(false);
   const [isSavingGoal, setIsSavingGoal] = useState(false);
@@ -647,12 +644,13 @@ export default function CoupleHomeScreen({ navigation }: any) {
   }, [fetchDashboardData]);
 
   const handleSaveGoal = useCallback(async () => {
-    if (!goalTitle.trim() || !goalTarget) {
-      Toast.show({ type: 'error', text1: 'Missing fields', text2: 'Please enter title and target' });
+    if (!goalTitle.trim()) {
+      Toast.show({ type: 'error', text1: 'Missing fields', text2: 'Please enter a goal title' });
       return;
     }
 
-    const targetNum = parseInt(goalTarget);
+    // Default target to 1 if not provided, for one-off bucket list items
+    const targetNum = goalTarget.trim() ? parseInt(goalTarget) : 1;
     if (isNaN(targetNum) || targetNum <= 0) {
       Toast.show({ type: 'error', text1: 'Invalid target', text2: 'Please enter a valid number' });
       return;
@@ -1203,11 +1201,7 @@ export default function CoupleHomeScreen({ navigation }: any) {
             <Text style={styles.modalTitle}>Write a Love Note 💌</Text>
             <Text style={styles.modalSubtitle}>Your partner will see this immediately</Text>
             <TextInput
-              style={[
-                styles.modalInput,
-                { height: 100, textAlignVertical: 'top' },
-                activeInput === 'loveNote' && styles.modalInputFocused
-              ]}
+              style={styles.modalInput}
               value={noteInput}
               onChangeText={setNoteInput}
               placeholder="My love, I've been thinking about you..."
@@ -1216,27 +1210,14 @@ export default function CoupleHomeScreen({ navigation }: any) {
               numberOfLines={4}
               maxLength={500}
               autoFocus
-              onFocus={() => setActiveInput('loveNote')}
-              onBlur={() => setActiveInput(null)}
             />
             <Text style={styles.charCounter}>{noteInput.length}/500</Text>
             <View style={styles.modalButtons}>
               <TouchableOpacity style={[styles.modalButton, styles.cancelButton]} onPress={() => setNoteModalVisible(false)}>
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.saveButtonContainer, isSavingNote && styles.buttonDisabled]}
-                onPress={handleSaveNote}
-                disabled={isSavingNote}
-              >
-                <LinearGradient
-                  colors={[COLORS.primary, '#C23576']}
-                  style={styles.modalSaveButtonGradient}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                >
-                  {isSavingNote ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.saveButtonText}>Send with Love ❤️</Text>}
-                </LinearGradient>
+              <TouchableOpacity style={[styles.modalButton, styles.saveButton, isSavingNote && styles.buttonDisabled]} onPress={handleSaveNote} disabled={isSavingNote}>
+                {isSavingNote ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.saveButtonText}>Send with Love ❤️</Text>}
               </TouchableOpacity>
             </View>
           </View>
@@ -1291,36 +1272,21 @@ export default function CoupleHomeScreen({ navigation }: any) {
             </View>
 
             <TextInput
-              style={[
-                styles.modalInput,
-                activeInput === 'mood' && styles.modalInputFocused
-              ]}
+              style={styles.modalInput}
               value={moodInput}
               onChangeText={setMoodInput}
               placeholder="e.g., Feeling energetic and happy today! 🌟"
               placeholderTextColor="#666"
+              autoFocus
               maxLength={100}
-              onFocus={() => setActiveInput('mood')}
-              onBlur={() => setActiveInput(null)}
             />
 
             <View style={styles.modalButtons}>
               <TouchableOpacity style={[styles.modalButton, styles.cancelButton]} onPress={() => setMoodModalVisible(false)}>
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.saveButtonContainer, isSavingMood && styles.buttonDisabled]}
-                onPress={handleSaveMood}
-                disabled={isSavingMood}
-              >
-                <LinearGradient
-                  colors={[COLORS.primary, '#C23576']}
-                  style={styles.modalSaveButtonGradient}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                >
-                  {isSavingMood ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.saveButtonText}>Share Mood 😊</Text>}
-                </LinearGradient>
+              <TouchableOpacity style={[styles.modalButton, styles.saveButton, isSavingMood && styles.buttonDisabled]} onPress={handleSaveMood} disabled={isSavingMood}>
+                {isSavingMood ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.saveButtonText}>Share Mood 😊</Text>}
               </TouchableOpacity>
             </View>
           </View>
@@ -1336,36 +1302,26 @@ export default function CoupleHomeScreen({ navigation }: any) {
             
             <View style={styles.customMessageInputRow}>
               <TextInput
-                style={[
-                  styles.emojiInput,
-                  activeInput === 'quickLoveEmoji' && styles.modalInputFocused
-                ]}
+                style={styles.emojiInput}
                 value={customMessageEmoji}
                 onChangeText={setCustomMessageEmoji}
                 placeholder="❤️"
                 maxLength={2}
-                onFocus={() => setActiveInput('quickLoveEmoji')}
-                onBlur={() => setActiveInput(null)}
               />
               <TextInput
-                style={[
-                  styles.messageInput,
-                  activeInput === 'quickLoveText' && styles.modalInputFocused
-                ]}
+                style={styles.messageInput}
                 value={customMessageInput}
                 onChangeText={setCustomMessageInput}
                 placeholder="e.g., You're amazing!"
                 placeholderTextColor="#666"
                 maxLength={50}
-                onFocus={() => setActiveInput('quickLoveText')}
-                onBlur={() => setActiveInput(null)}
               />
               <TouchableOpacity style={styles.addMessageBtn} onPress={handleAddCustomMessage} disabled={isAddingCustomMessage}>
                 {isAddingCustomMessage ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.addMessageBtnText}>Add</Text>}
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={{ maxHeight: 240, marginTop: 16 }}>
+            <ScrollView style={{ maxHeight: 300, marginTop: 16 }}>
               <Text style={styles.customMessagesTitle}>Your Custom Messages:</Text>
               {customQuickMessages.length === 0 ? (
                 <Text style={styles.noMessagesText}>No custom messages yet. Add one above! ✨</Text>
@@ -1380,14 +1336,7 @@ export default function CoupleHomeScreen({ navigation }: any) {
             </ScrollView>
 
             <TouchableOpacity style={styles.closeModalBtn} onPress={() => setQuickLoveCustomizeVisible(false)}>
-              <LinearGradient
-                colors={[COLORS.primary, '#C23576']}
-                style={{ paddingVertical: 12, alignItems: 'center' }}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-              >
-                <Text style={styles.closeModalText}>Done</Text>
-              </LinearGradient>
+              <Text style={styles.closeModalText}>Done</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1397,9 +1346,7 @@ export default function CoupleHomeScreen({ navigation }: any) {
       <Modal visible={isGoalModalVisible} transparent animationType="slide" onRequestClose={() => setGoalModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Create a Shared Goal 🎯</Text>
-            <Text style={styles.modalSubtitle}>Establish a challenge to achieve together</Text>
-            
+            <Text style={styles.modalTitle}>Add a Goal or Bucket List Item 🎯</Text>
             <Text style={styles.inputLabel}>Pick an emoji</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }}>
               {['🎯', '🏃', '🍕', '🎬', '🌍', '📚', '❤️', '🎮', '🎨', '✈️', '🏋️', '💪'].map((e) => (
@@ -1412,53 +1359,27 @@ export default function CoupleHomeScreen({ navigation }: any) {
                 </TouchableOpacity>
               ))}
             </ScrollView>
-
-            <Text style={styles.inputLabel}>Goal details</Text>
             <TextInput
-              style={[
-                styles.modalInput,
-                { height: 50 },
-                activeInput === 'goalTitle' && styles.modalInputFocused
-              ]}
+              style={[styles.modalInput, { height: 50 }]}
               value={goalTitle}
               onChangeText={setGoalTitle}
-              placeholder="e.g., Watch 50 Movies Together"
+              placeholder="e.g., Go on a bike ride 🚲"
               placeholderTextColor="#555"
-              onFocus={() => setActiveInput('goalTitle')}
-              onBlur={() => setActiveInput(null)}
             />
             <TextInput
-              style={[
-                styles.modalInput,
-                { height: 50 },
-                activeInput === 'goalTarget' && styles.modalInputFocused
-              ]}
+              style={[styles.modalInput, { height: 50 }]}
               value={goalTarget}
               onChangeText={setGoalTarget}
-              placeholder="Target Number (e.g. 50)"
+              placeholder="Target Count (optional, default: 1)"
               placeholderTextColor="#555"
               keyboardType="numeric"
-              onFocus={() => setActiveInput('goalTarget')}
-              onBlur={() => setActiveInput(null)}
             />
-            
             <View style={styles.modalButtons}>
               <TouchableOpacity style={[styles.modalButton, styles.cancelButton]} onPress={() => setGoalModalVisible(false)}>
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.saveButtonContainer, isSavingGoal && styles.buttonDisabled]}
-                onPress={handleSaveGoal}
-                disabled={isSavingGoal}
-              >
-                <LinearGradient
-                  colors={[COLORS.primary, '#C23576']}
-                  style={styles.modalSaveButtonGradient}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                >
-                  {isSavingGoal ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.saveButtonText}>Create Goal</Text>}
-                </LinearGradient>
+              <TouchableOpacity style={[styles.modalButton, styles.saveButton, isSavingGoal && styles.buttonDisabled]} onPress={handleSaveGoal} disabled={isSavingGoal}>
+                {isSavingGoal ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.saveButtonText}>Create Goal</Text>}
               </TouchableOpacity>
             </View>
           </View>
@@ -1470,32 +1391,17 @@ export default function CoupleHomeScreen({ navigation }: any) {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Start a Poll 🗳️</Text>
-            <Text style={styles.modalSubtitle}>Ask your partner's opinion on something</Text>
-
-            <Text style={styles.inputLabel}>Question</Text>
             <TextInput
-              style={[
-                styles.modalInput,
-                { height: 50 },
-                activeInput === 'pollQuestion' && styles.modalInputFocused
-              ]}
+              style={[styles.modalInput, { height: 50 }]}
               value={pollQuestion}
               onChangeText={setPollQuestion}
               placeholder="What's for dinner? 🍕"
               placeholderTextColor="#555"
-              onFocus={() => setActiveInput('pollQuestion')}
-              onBlur={() => setActiveInput(null)}
             />
-
-            <Text style={styles.inputLabel}>Options</Text>
             {pollOptions.map((opt, i) => (
               <TextInput
                 key={i}
-                style={[
-                  styles.modalInput,
-                  { height: 44, marginBottom: 10 },
-                  activeInput === `pollOption_${i}` && styles.modalInputFocused
-                ]}
+                style={[styles.modalInput, { height: 44, marginBottom: 10 }]}
                 value={opt}
                 onChangeText={(text) => {
                   const newOpts = [...pollOptions];
@@ -1504,31 +1410,17 @@ export default function CoupleHomeScreen({ navigation }: any) {
                 }}
                 placeholder={`Option ${i + 1}`}
                 placeholderTextColor="#555"
-                onFocus={() => setActiveInput(`pollOption_${i}`)}
-                onBlur={() => setActiveInput(null)}
               />
             ))}
-            <TouchableOpacity onPress={() => setPollOptions([...pollOptions, ''])} style={{ marginBottom: 15, paddingLeft: 4 }}>
-              <Text style={{ color: COLORS.primary, fontWeight: '700', fontSize: 13 }}>+ Add Option</Text>
+            <TouchableOpacity onPress={() => setPollOptions([...pollOptions, ''])} style={{ marginBottom: 15 }}>
+              <Text style={{ color: COLORS.primary, fontWeight: 'bold' }}>+ Add Option</Text>
             </TouchableOpacity>
-
             <View style={styles.modalButtons}>
               <TouchableOpacity style={[styles.modalButton, styles.cancelButton]} onPress={() => setPollModalVisible(false)}>
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.saveButtonContainer, isSavingPoll && styles.buttonDisabled]}
-                onPress={handleSavePoll}
-                disabled={isSavingPoll}
-              >
-                <LinearGradient
-                  colors={[COLORS.primary, '#C23576']}
-                  style={styles.modalSaveButtonGradient}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                >
-                  {isSavingPoll ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.saveButtonText}>Start Poll</Text>}
-                </LinearGradient>
+              <TouchableOpacity style={[styles.modalButton, styles.saveButton, isSavingPoll && styles.buttonDisabled]} onPress={handleSavePoll} disabled={isSavingPoll}>
+                {isSavingPoll ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.saveButtonText}>Start Poll</Text>}
               </TouchableOpacity>
             </View>
           </View>
@@ -1540,8 +1432,6 @@ export default function CoupleHomeScreen({ navigation }: any) {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Add an Event 📅</Text>
-            <Text style={styles.modalSubtitle}>Countdown to your next special plan</Text>
-
             <Text style={styles.inputLabel}>Event Type</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }}>
               {[
@@ -1559,7 +1449,6 @@ export default function CoupleHomeScreen({ navigation }: any) {
                 </TouchableOpacity>
               ))}
             </ScrollView>
-
             <Text style={styles.inputLabel}>Pick an emoji</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }}>
               {['📅', '💑', '✈️', '🎂', '🌹', '🏖️', '🎉', '🍽️', '🎭', '💍'].map((e) => (
@@ -1572,52 +1461,26 @@ export default function CoupleHomeScreen({ navigation }: any) {
                 </TouchableOpacity>
               ))}
             </ScrollView>
-
-            <Text style={styles.inputLabel}>Event Name & Date</Text>
             <TextInput
-              style={[
-                styles.modalInput,
-                { height: 50 },
-                activeInput === 'eventTitle' && styles.modalInputFocused
-              ]}
+              style={[styles.modalInput, { height: 50 }]}
               value={eventTitle}
               onChangeText={setEventTitle}
               placeholder="Event name (e.g. Paris Trip)"
               placeholderTextColor="#555"
-              onFocus={() => setActiveInput('eventTitle')}
-              onBlur={() => setActiveInput(null)}
             />
             <TextInput
-              style={[
-                styles.modalInput,
-                { height: 50 },
-                activeInput === 'eventDate' && styles.modalInputFocused
-              ]}
+              style={[styles.modalInput, { height: 50 }]}
               value={eventDate}
               onChangeText={setEventDate}
               placeholder="Date (YYYY-MM-DD)"
               placeholderTextColor="#555"
-              onFocus={() => setActiveInput('eventDate')}
-              onBlur={() => setActiveInput(null)}
             />
-
             <View style={styles.modalButtons}>
               <TouchableOpacity style={[styles.modalButton, styles.cancelButton]} onPress={() => setEventModalVisible(false)}>
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.saveButtonContainer, isSavingEvent && styles.buttonDisabled]}
-                onPress={handleSaveEvent}
-                disabled={isSavingEvent}
-              >
-                <LinearGradient
-                  colors={[COLORS.primary, '#C23576']}
-                  style={styles.modalSaveButtonGradient}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                >
-                  {isSavingEvent ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.saveButtonText}>Add Event</Text>}
-                </LinearGradient>
+              <TouchableOpacity style={[styles.modalButton, styles.saveButton, isSavingEvent && styles.buttonDisabled]} onPress={handleSaveEvent} disabled={isSavingEvent}>
+                {isSavingEvent ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.saveButtonText}>Add Event</Text>}
               </TouchableOpacity>
             </View>
           </View>
@@ -2151,7 +2014,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   // Modal Styles
-  // Modal Styles
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.85)',
@@ -2159,56 +2021,44 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: 'rgba(28, 28, 30, 0.95)',
-    borderRadius: 30,
-    padding: 24,
-    width: '90%',
+    backgroundColor: COLORS.card,
+    borderRadius: 24,
+    padding: 18,
+    width: '85%',
     maxWidth: 400,
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 77, 109, 0.15)',
-    shadowColor: '#FF4D8D',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
-    elevation: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   modalTitle: {
     color: '#fff',
-    fontSize: 18,
-    fontWeight: '800',
+    fontSize: 16,
+    fontWeight: 'bold',
     marginBottom: 6,
     textAlign: 'center',
-    letterSpacing: 0.5,
   },
   modalSubtitle: {
     color: COLORS.subtext,
     fontSize: 12,
     textAlign: 'center',
-    marginBottom: 18,
+    marginBottom: 14,
   },
   inputLabel: {
-    color: 'rgba(255, 255, 255, 0.6)',
+    color: COLORS.subtext,
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: 'bold',
     textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: 8,
-    marginTop: 10,
+    letterSpacing: 0.8,
+    marginBottom: 6,
   },
   modalInput: {
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    backgroundColor: '#111',
     color: '#fff',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 14,
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    marginBottom: 12,
-  },
-  modalInputFocused: {
-    borderColor: COLORS.primary,
-    backgroundColor: 'rgba(255, 77, 109, 0.03)',
+    borderRadius: 12,
+    padding: 12,
+    fontSize: 13,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginBottom: 8,
   },
   charCounter: {
     color: COLORS.subtext,
@@ -2241,15 +2091,15 @@ const styles = StyleSheet.create({
     fontSize: 28,
   },
   emojiChip: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderWidth: 1,
+    borderColor: COLORS.border,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 10,
+    marginRight: 8,
   },
   emojiChipSelected: {
     borderColor: COLORS.primary,
@@ -2259,13 +2109,13 @@ const styles = StyleSheet.create({
     fontSize: 22,
   },
   typeChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    marginRight: 10,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginRight: 8,
   },
   typeChipText: {
     color: COLORS.subtext,
@@ -2276,44 +2126,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: 12,
-    marginTop: 14,
+    marginTop: 8,
   },
   modalButton: {
     flex: 1,
-    height: 48,
-    borderRadius: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
     alignItems: 'center',
-    justifyContent: 'center',
   },
   cancelButton: {
     backgroundColor: 'transparent',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
-  saveButtonContainer: {
-    flex: 1.3,
-    borderRadius: 16,
-    overflow: 'hidden',
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  modalSaveButtonGradient: {
-    flex: 1,
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
+  saveButton: {
+    backgroundColor: COLORS.primary,
   },
   cancelButtonText: {
-    color: 'rgba(255, 255, 255, 0.7)',
-    fontWeight: '700',
+    color: COLORS.subtext,
+    fontWeight: '600',
     fontSize: 13,
   },
   saveButtonText: {
     color: '#fff',
-    fontWeight: '700',
+    fontWeight: '600',
     fontSize: 13,
   },
   buttonDisabled: {
@@ -2326,37 +2162,35 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   emojiInput: {
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    backgroundColor: '#111',
     color: '#fff',
-    borderRadius: 14,
+    borderRadius: 12,
     padding: 12,
     fontSize: 20,
     textAlign: 'center',
-    width: 54,
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    width: 50,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   messageInput: {
     flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    backgroundColor: '#111',
     color: '#fff',
-    borderRadius: 14,
+    borderRadius: 12,
     padding: 12,
     fontSize: 14,
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   addMessageBtn: {
     backgroundColor: COLORS.primary,
-    borderRadius: 14,
-    paddingHorizontal: 16,
+    borderRadius: 12,
+    padding: 12,
     justifyContent: 'center',
-    alignItems: 'center',
   },
   addMessageBtnText: {
     color: '#fff',
-    fontWeight: '700',
-    fontSize: 13,
+    fontWeight: 'bold',
   },
   customMessagesTitle: {
     color: '#fff',
@@ -2389,13 +2223,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   closeModalBtn: {
-    borderRadius: 16,
-    overflow: 'hidden',
+    backgroundColor: COLORS.primary,
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
     marginTop: 16,
   },
   closeModalText: {
     color: '#fff',
-    fontWeight: '700',
+    fontWeight: 'bold',
     fontSize: 14,
   },
   // Empty State
